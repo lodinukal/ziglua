@@ -2816,3 +2816,38 @@ test "doFile" {
 
     try expectEqualStrings("testing", try lua.get([]const u8, "GLOBAL"));
 }
+
+test "interrupt" {
+    if (ziglua.lang != .luau) return;
+
+    var lua = try Lua.init(&testing.allocator);
+    defer lua.deinit();
+
+    const interrupt_handler = struct {
+        var times_called: i32 = 0;
+
+        pub fn inner(l: *Lua, _: i32) void {
+            times_called += 1;
+            l.setInterruptCallbackFn(null);
+        }
+    };
+
+    // Luau only checks for an interrupt callback at certain points, including function calls
+    try lua.doString(
+        \\function add(a, b)
+        \\   return a + b
+        \\end
+    );
+    lua.setInterruptCallbackFn(ziglua.wrap(interrupt_handler.inner));
+
+    try lua.doString(
+        \\c = add(1, 2)
+    );
+    try testing.expectEqual(1, interrupt_handler.times_called);
+
+    // Handler should have removed itself
+    try lua.doString(
+        \\c = add(1, 2)
+    );
+    try testing.expectEqual(1, interrupt_handler.times_called);
+}
