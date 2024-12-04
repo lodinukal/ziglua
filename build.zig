@@ -170,22 +170,28 @@ pub fn build(b: *Build) void {
 }
 
 fn buildLua(b: *Build, target: Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, upstream: *Build.Dependency, lang: Language, shared: bool) *Step.Compile {
-    const lib_opts = .{
-        .name = "lua",
-        .target = target,
-        .optimize = optimize,
-        .version = switch (lang) {
-            .lua51 => std.SemanticVersion{ .major = 5, .minor = 1, .patch = 5 },
-            .lua52 => std.SemanticVersion{ .major = 5, .minor = 2, .patch = 4 },
-            .lua53 => std.SemanticVersion{ .major = 5, .minor = 3, .patch = 6 },
-            .lua54 => std.SemanticVersion{ .major = 5, .minor = 4, .patch = 6 },
-            else => unreachable,
-        },
+    const version = switch (lang) {
+        .lua51 => std.SemanticVersion{ .major = 5, .minor = 1, .patch = 5 },
+        .lua52 => std.SemanticVersion{ .major = 5, .minor = 2, .patch = 4 },
+        .lua53 => std.SemanticVersion{ .major = 5, .minor = 3, .patch = 6 },
+        .lua54 => std.SemanticVersion{ .major = 5, .minor = 4, .patch = 6 },
+        else => unreachable,
     };
+
     const lib = if (shared)
-        b.addSharedLibrary(lib_opts)
+        b.addSharedLibrary(.{
+            .name = "lua",
+            .target = target,
+            .optimize = optimize,
+            .version = version,
+        })
     else
-        b.addStaticLibrary(lib_opts);
+        b.addStaticLibrary(.{
+            .name = "lua",
+            .target = target,
+            .optimize = optimize,
+            .version = version,
+        });
 
     lib.addIncludePath(upstream.path("src"));
 
@@ -240,7 +246,7 @@ fn buildLuaEmscripten(
     lang: Language,
     emsdk: *Build.Dependency,
 ) *Step.Compile {
-    const lib_opts = .{
+    const lib = b.addStaticLibrary(.{
         .name = "lua",
         .target = target,
         .optimize = optimize,
@@ -251,8 +257,7 @@ fn buildLuaEmscripten(
             .lua54 => std.SemanticVersion{ .major = 5, .minor = 4, .patch = 6 },
             else => unreachable,
         },
-    };
-    const lib = b.addStaticLibrary(lib_opts);
+    });
     if (try emSdkSetupStep(b, emsdk)) |emsdk_setup| {
         lib.step.dependOn(&emsdk_setup.step);
     }
@@ -408,15 +413,18 @@ fn buildLuauEmscripten(
 
 fn buildLuaJIT(b: *Build, target: Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, upstream: *Build.Dependency, shared: bool) *Step.Compile {
     // TODO: extract this to the main build function because it is shared between all specialized build functions
-    const lib_opts = .{
-        .name = "lua",
-        .target = target,
-        .optimize = optimize,
-    };
     const lib: *Step.Compile = if (shared)
-        b.addSharedLibrary(lib_opts)
+        b.addSharedLibrary(.{
+            .name = "lua",
+            .target = target,
+            .optimize = optimize,
+        })
     else
-        b.addStaticLibrary(lib_opts);
+        b.addStaticLibrary(.{
+            .name = "lua",
+            .target = target,
+            .optimize = optimize,
+        });
 
     // Compile minilua interpreter used at build time to generate files
     const minilua = b.addExecutable(.{
