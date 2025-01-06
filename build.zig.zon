@@ -34,8 +34,8 @@
         },
 
         .luau = .{
-            .url = "https://github.com/luau-lang/luau/archive/refs/tags/0.607.tar.gz",
-            .hash = "122003818ff2aa912db37d4bbda314ff9ff70d03d9243af4b639490be98e2bfa7cb6",
+            .url = "https://github.com/luau-lang/luau/archive/refs/tags/0.655.tar.gz",
+            .hash = "12202e48ce8bbddc043bbaadd10ac783d427b41b1ad9b6b3cb4b91bff6cdbb1a3d98",
         },
     },
 }
